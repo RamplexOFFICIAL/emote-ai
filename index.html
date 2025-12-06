@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>EmoteAI – Emotional Support Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="A gentle, AI-style chat designed for emotional support and reflection. Runs entirely in your browser." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <div class="app-header__brand">
+        <div class="app-header__logo">💬</div>
+        <div class="app-header__titles">
+          <h1 class="app-header__title">EmoteAI</h1>
+          <p class="app-header__subtitle">A calm space to vent, reflect, and feel heard.</p>
+        </div>
+      </div>
+      <div class="app-header__meta">
+        <span class="app-header__badge">Offline by default · Optional AI via OpenRouter</span>
+        <p class="app-header__disclaimer">
+          This is a listening companion, not a substitute for professional mental health care.
+        </p>
+        <div class="app-header__ai">
+          <label class="field__label field__label--inline" for="apiKeyInput">OpenRouter API key (optional)</label>
+          <input
+            id="apiKeyInput"
+            class="field__input field__input--sm app-header__ai-input"
+            type="password"
+            autocomplete="off"
+            placeholder="sk-or-..."
+          />
+          <button type="button" class="btn btn--ghost app-header__ai-toggle" id="aiToggle">
+            AI mode: Offline (local)
+          </button>
+        </div>
+        <p class="app-header__ai-hint">
+          Your key is kept only in this tab and sent directly to OpenRouter when you send a message.
+        </p>
+        <button type="button" class="app-header__ai-help" id="apiHelpOpen">
+          How do I get a key?
+        </button>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <section class="app-main__column app-main__column--chat">
+        <div class="chat">
+          <div class="chat__header">
+            <div class="chat-status">
+              <span class="chat-status__dot"></span>
+              <span class="chat-status__label">Emotional Support Bot · Online</span>
+            </div>
+            <div class="chat-metadata">
+              <div class="chat-mode">
+                <span class="chat-mode__label">Tone</span>
+                <div class="chat-mode__options" id="toneSelector">
+                  <button type="button" class="chip chip--active" data-tone="gentle">Gentle</button>
+                  <button type="button" class="chip" data-tone="practical">Practical</button>
+                  <button type="button" class="chip" data-tone="uplifting">Uplifting</button>
+                </div>
+              </div>
+              <div class="chat-emotion">
+                <span class="chat-mode__label">Main emotion</span>
+                <select id="sessionEmotion" class="field__input field__input--sm chat-emotion__select">
+                  <option value="">Let the bot infer</option>
+                  <option value="sad">Sad / grief</option>
+                  <option value="anxious">Anxious / panic</option>
+                  <option value="angry">Angry / frustrated</option>
+                  <option value="lonely">Lonely / disconnected</option>
+                  <option value="overwhelmed">Overwhelmed / burnout</option>
+                  <option value="grateful">Grateful / hopeful</option>
+                  <option value="other">Mixed / other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat__quick">
+            <p class="chat__quick-label">How are you arriving right now?</p>
+            <div class="chat__quick-list">
+              <button type="button" class="chip chip--ghost" data-emotion="sad">Sad / low</button>
+              <button type="button" class="chip chip--ghost" data-emotion="anxious">Anxious / on edge</button>
+              <button type="button" class="chip chip--ghost" data-emotion="angry">Irritated / angry</button>
+              <button type="button" class="chip chip--ghost" data-emotion="overwhelmed">Overwhelmed</button>
+              <button type="button" class="chip chip--ghost" data-emotion="lonely">Lonely</button>
+            </div>
+            <button type="button" class="chat__quick-custom" id="quickCustom">
+              + Add your own "arriving" phrase
+            </button>
+          </div>
+
+          <div class="chat__messages" id="chatMessages" aria-live="polite"></div>
+
+          <form class="chat__composer" id="chatForm">
+            <label class="chat__composer-label" for="chatInput">
+              Type a message as if you were talking to a caring friend.
+            </label>
+            <div class="chat__composer-main">
+              <textarea
+                id="chatInput"
+                class="chat__input"
+                rows="2"
+                placeholder="You can vent, ask for perspective, or just say how today feels…"
+              ></textarea>
+              <button
+                type="button"
+                class="btn btn--ghost chat__mic"
+                id="micButton"
+                aria-label="Speak your message instead of typing"
+              >
+                Mic
+              </button>
+              <button type="submit" class="btn btn--primary" id="sendButton">
+                Send
+              </button>
+            </div>
+            <div class="chat__composer-hint">
+              Press <kbd>Enter</kbd> to send · <kbd>Shift</kbd> + <kbd>Enter</kbd> for a new line
+            </div>
+            <div class="chat__voice">
+              <div class="chat__voice-group">
+                <label class="field__label field__label--inline" for="voiceProfile">Voice</label>
+                <select id="voiceProfile" class="field__input field__input--sm">
+                  <option value="soft">Soft</option>
+                  <option value="calm">Calm</option>
+                  <option value="neutral">Neutral</option>
+                  <option value="deep">Deep</option>
+                  <option value="bright">Bright</option>
+                  <option value="lively">Lively</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+              <div class="chat__voice-group">
+                <label class="field__label field__label--inline" for="voiceRate">Speed</label>
+                <input
+                  id="voiceRate"
+                  class="field__input field__input--sm"
+                  type="range"
+                  min="0.7"
+                  max="1.3"
+                  step="0.05"
+                />
+              </div>
+              <div class="chat__voice-group">
+                <label class="field__label field__label--inline" for="voicePitch">Pitch</label>
+                <input
+                  id="voicePitch"
+                  class="field__input field__input--sm"
+                  type="range"
+                  min="0.8"
+                  max="1.3"
+                  step="0.05"
+                />
+              </div>
+              <div class="chat__voice-group">
+                <label class="field__label field__label--inline" for="voiceSystem">System voice</label>
+                <select id="voiceSystem" class="field__input field__input--sm"></select>
+              </div>
+            </div>
+          </form>
+          <div class="chat__suggestions" id="chatSuggestions"></div>
+        </div>
+      </section>
+
+      <section class="app-main__column app-main__column--tools">
+        <section class="panel toolkit">
+          <header class="panel__header">
+            <h2 class="panel__title">Emotional Toolkit</h2>
+            <p class="panel__subtitle">
+              Quick practices you can tap while we talk.
+            </p>
+          </header>
+          <div class="toolkit__grid">
+            <article class="tool-card">
+              <h3 class="tool-card__title">2-minute grounding</h3>
+              <p class="tool-card__body">
+                Name 5 things you can see, 4 you can feel, 3 you can hear, 2 you can smell, and 1 you can taste.
+                Go slowly. You can share what you notice here.
+              </p>
+              <button type="button" class="tool-card__action btn btn--ghost" data-insert-text="Can you guide me through that grounding exercise you mentioned?">
+                Ask the bot to guide this
+              </button>
+            </article>
+            <article class="tool-card">
+              <h3 class="tool-card__title">Calm breathing</h3>
+              <p class="tool-card__body">
+                Breathe in for 4, hold for 4, out for 6. Repeat a few times. Notice where your body softens, even a little.
+              </p>
+              <button type="button" class="tool-card__action btn btn--ghost" data-insert-text="Can you pace my breathing with the 4-4-6 pattern?">
+                Ask for pacing
+              </button>
+            </article>
+            <article class="tool-card">
+              <h3 class="tool-card__title">Self-kindness reframe</h3>
+              <p class="tool-card__body">
+                If a close friend felt like you do, what would you want them to hear? You can ask the bot to help put this into words.
+              </p>
+              <button type="button" class="tool-card__action btn btn--ghost" data-insert-text="Can you help me say something kinder to myself about this?">
+                Ask for a gentle reframe
+              </button>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel stories">
+          <header class="panel__header">
+            <h2 class="panel__title">Shared Stories</h2>
+            <p class="panel__subtitle">
+              Add short anonymous stories about moments you struggled and what (if anything) helped.
+              They stay in your browser and help the bot share more human examples back with you.
+            </p>
+          </header>
+
+          <form class="stories__form" id="storyForm">
+            <div class="field-row">
+              <div class="field">
+                <label class="field__label" for="storyTitle">Story title</label>
+                <input
+                  id="storyTitle"
+                  class="field__input"
+                  type="text"
+                  placeholder="e.g. &quot;A night I felt completely overwhelmed&quot;"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label class="field__label" for="storyMood">Main emotion</label>
+                <select id="storyMood" class="field__input" required>
+                  <option value="">Choose one…</option>
+                  <option value="sad">Sad / grief</option>
+                  <option value="anxious">Anxious / panic</option>
+                  <option value="angry">Angry / frustrated</option>
+                  <option value="lonely">Lonely / disconnected</option>
+                  <option value="overwhelmed">Overwhelmed / burnout</option>
+                  <option value="grateful">Grateful / hopeful</option>
+                  <option value="other">Mixed / other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="storyBody">What was going on for you?</label>
+              <textarea
+                id="storyBody"
+                class="field__input field__input--multiline"
+                rows="4"
+                placeholder="Share as much or as little as you like. No names or identifying details."
+                required
+              ></textarea>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="storyLesson">What helped, even a little? (optional)</label>
+              <textarea
+                id="storyLesson"
+                class="field__input field__input--multiline"
+                rows="3"
+                placeholder="A thought, action, or support that eased things or that you wish you'd had."
+              ></textarea>
+            </div>
+
+            <div class="stories__form-footer">
+              <div class="stories__form-note">
+                Stories are stored privately in your browser and used to make responses feel more human.
+              </div>
+              <button type="submit" class="btn btn--primary">
+                Save story
+              </button>
+            </div>
+          </form>
+
+          <div class="stories__list-header">
+            <div class="stories__list-title">
+              Your stories
+            </div>
+            <div class="stories__filter">
+              <label class="field__label field__label--inline" for="storyFilter">Filter</label>
+              <select id="storyFilter" class="field__input field__input--sm">
+                <option value="all">All moods</option>
+                <option value="sad">Sad / grief</option>
+                <option value="anxious">Anxious / panic</option>
+                <option value="angry">Angry / frustrated</option>
+                <option value="lonely">Lonely / disconnected</option>
+                <option value="overwhelmed">Overwhelmed / burnout</option>
+                <option value="grateful">Grateful / hopeful</option>
+                <option value="other">Mixed / other</option>
+              </select>
+              <input
+                id="storySearch"
+                class="field__input field__input--sm stories__search"
+                type="text"
+                placeholder="Search text..."
+              />
+            </div>
+          </div>
+
+          <div class="stories__list" id="storyList">
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p class="app-footer__text">
+        If you are in immediate danger or considering harming yourself, please reach out to local emergency services or a crisis hotline in your area.
+      </p>
+    </footer>
+    <div class="modal" id="apiHelpModal" aria-hidden="true">
+      <div class="modal__backdrop" data-close-help></div>
+      <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="apiHelpTitle">
+        <header class="modal__header">
+          <h2 class="modal__title" id="apiHelpTitle">Using OpenRouter with EmoteAI</h2>
+          <button type="button" class="modal__close" id="apiHelpClose" aria-label="Close help">
+            ×
+          </button>
+        </header>
+        <div class="modal__body">
+          <p class="modal__intro">
+            Online replies use your own OpenRouter API key. You stay in control of the key, and this page only sends it directly to
+            OpenRouter.
+          </p>
+          <ol class="modal__steps">
+            <li>
+              Go to
+              <a href="https://openrouter.ai" target="_blank" rel="noreferrer">openrouter.ai</a>
+              and sign in or create an account.
+            </li>
+            <li>
+              In your OpenRouter dashboard, find the
+              <strong>API Keys</strong>
+              section and create a new key.
+            </li>
+            <li>
+              Copy the key (it usually starts with
+              <code>sk-or-</code>
+              ). Keep it secret and do not share it publicly.
+            </li>
+            <li>
+              Paste the key into the
+              <strong>OpenRouter API key</strong>
+              box at the top of this page. The app will remember it only in this browser.
+            </li>
+            <li>
+              Click
+              <strong>AI mode: Online (OpenRouter)</strong>
+              to switch from offline local replies to online model replies.
+            </li>
+          </ol>
+          <p class="modal__note">
+            If a key is ever exposed or shared by accident, you can go back to OpenRouter, delete that key, and create a new one.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
